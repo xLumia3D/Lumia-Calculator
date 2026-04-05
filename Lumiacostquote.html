@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora Lumia</title>
+  <!-- Favicon: ícono Lucide Printer como SVG data URI (funciona sin servidor) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 6 2 18 2 18 9'/%3E%3Cpath d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/%3E%3Crect x='6' y='14' width='12' height='8'/%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={darkMode:'class'}</script>
+  <style>
+    /* ── Sliders ── */
+    input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;background:#e2e8f0;outline:none;cursor:pointer}
+    .dark input[type=range]{background:#374151}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:#0ea5e9;cursor:pointer;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+    input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#0ea5e9;cursor:pointer;border:2px solid white}
+    body{transition:background-color .25s,color .25s}
+    .card{transition:transform .2s,box-shadow .2s}
+    .card:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+    .mbtn{transition:all .2s}
+    .mbtn:hover{transform:scale(1.02)}
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:3px}
+    .label{display:block;font-size:.75rem;color:#6b7280;margin-bottom:.25rem}
+    .dark .label{color:#9ca3af}
+    .inp{width:100%;padding:.4rem .6rem;font-size:.875rem;border:1px solid #d1d5db;border-radius:.5rem;background:#fff;color:#111;outline:none;transition:border-color .15s,box-shadow .15s}
+    .inp:focus{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+    .dark .inp{background:#374151;border-color:#4b5563;color:#f3f4f6}
+    .dark .inp:focus{border-color:#38bdf8}
+    .brow{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid #f1f5f9}
+    .dark .brow{border-color:#1f2937}
+
+    /* ═══════════ TOOLTIPS ═══════════ */
+    .tt-wrap{position:relative;display:inline-flex;align-items:center;vertical-align:middle}
+    .tt-icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#0ea5e9;color:#fff;font-size:10px;font-weight:700;cursor:help;flex-shrink:0;margin-left:7px;border:none;outline:none;line-height:1;transition:background .15s;user-select:none}
+    .tt-icon:hover,.tt-icon:focus{background:#0284c7}
+    .tt-box{position:absolute;left:0;top:calc(100% + 10px);background:#1e293b;color:#f1f5f9;border-radius:12px;padding:14px 16px;font-size:.78rem;line-height:1.6;font-weight:400;width:320px;max-width:min(320px,88vw);box-shadow:0 10px 32px rgba(0,0,0,.35);z-index:999;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .18s,visibility .18s;text-align:left}
+    .tt-box::before{content:'';position:absolute;bottom:100%;left:16px;border:7px solid transparent;border-bottom-color:#1e293b}
+    .tt-wrap:hover .tt-box,.tt-wrap.open .tt-box{opacity:1;visibility:visible}
+    .dark .tt-box{background:#f0f9ff;color:#1e293b;box-shadow:0 10px 32px rgba(0,0,0,.5)}
+    .dark .tt-box::before{border-bottom-color:#f0f9ff}
+    .tt-box b{color:#38bdf8;font-weight:600}
+    .dark .tt-box b{color:#0369a1}
+    .tt-box .tt-tip{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-style:italic;color:#94a3b8;font-size:.73rem}
+    .dark .tt-box .tt-tip{border-top-color:rgba(0,0,0,.12);color:#64748b}
+
+    /* ═══════════ TOAST AUTOSAVE ═══════════ */
+    #save-toast{
+      position:fixed;bottom:24px;right:24px;
+      background:#22c55e;color:#fff;
+      padding:7px 16px;border-radius:20px;
+      font-size:.78rem;font-weight:600;
+      display:flex;align-items:center;gap:6px;
+      z-index:9999;pointer-events:none;
+      opacity:0;transform:translateY(8px);
+      transition:opacity .2s,transform .2s;
+      box-shadow:0 4px 16px rgba(34,197,94,.35);
+    }
+    #save-toast.show{opacity:1;transform:translateY(0)}
+
+    /* ═══════════ PRINT ═══════════ */
+    @media print{
+      .no-print{display:none!important}
+      .print-only{display:block!important}
+      body{background:#fff!important;color:#111!important;margin:0;padding:0}
+      @page{size:A4;margin:0}
+    }
+    .print-only{display:none}
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen">
+
+<!-- ═══ TOAST AUTOSAVE ═══ -->
+<div id="save-toast" aria-live="polite">✅ <span id="toast-msg">Guardado</span></div>
+
+<!-- ══════════════════════════════════════════════
+     PRINT VIEW — Cabecera = Logo + Empresa del USUARIO
+     padding:1cm reemplaza el margin:0 del @page
+══════════════════════════════════════════════ -->
+<div class="print-only" style="font-family:'Segoe UI',Arial,sans-serif;max-width:780px;margin:0 auto;padding:1cm">
+
+  <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px">
+    <div id="print-logo" style="flex-shrink:0;height:72px;max-width:180px;display:flex;align-items:center"></div>
+    <div style="flex:1;border-left:3px solid #0ea5e9;padding-left:16px">
+      <h1 id="pv-co" style="font-size:1.9rem;font-weight:800;color:#0369a1;margin:0;line-height:1.1"></h1>
+      <p id="pv-ct" style="color:#64748b;font-size:.85rem;margin:5px 0 0"></p>
+    </div>
+  </div>
+  <hr style="border:none;border-top:2px solid #0ea5e9;margin-bottom:20px">
+
+  <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+    <tr>
+      <td style="padding:6px 0;vertical-align:top;width:50%">
+        <span id="pvl-proj" style="color:#94a3b8;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600"></span><br>
+        <strong id="pv-proj" style="font-size:1.05rem;color:#1e293b"></strong>
+      </td>
+      <td style="padding:6px 0;text-align:right;vertical-align:top">
+        <span id="pvl-cli" style="color:#94a3b8;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600"></span><br>
+        <strong id="pv-cli" style="font-size:1.05rem;color:#1e293b"></strong>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:6px 0;vertical-align:top">
+        <span id="pvl-date" style="color:#94a3b8;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600"></span><br>
+        <strong id="pv-date" style="font-size:1.05rem;color:#1e293b"></strong>
+      </td>
+      <td style="padding:6px 0;text-align:right;vertical-align:top">
+        <span id="pvl-num" style="color:#94a3b8;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600"></span><br>
+        <strong id="pv-num" style="font-size:1.05rem;color:#1e293b"></strong>
+      </td>
+    </tr>
+  </table>
+
+  <div style="background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1.5px solid #bae6fd;border-radius:14px;padding:32px;text-align:center;margin-bottom:24px">
+    <p id="pv-service" style="color:#0369a1;font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;margin:0 0 10px;font-weight:700"></p>
+    <p id="pv-price" style="font-size:3.8rem;font-weight:800;color:#0284c7;margin:0;letter-spacing:-.02em"></p>
+    <p id="pv-total-sub" style="color:#64748b;font-size:.82rem;margin:10px 0 0"></p>
+  </div>
+
+  <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;font-size:.85rem;color:#475569;margin-bottom:24px">
+    <p id="pv-notes-lbl" style="margin:0 0 6px;font-weight:700;color:#334155;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em"></p>
+    <p id="pv-notes" style="margin:0;white-space:pre-line;line-height:1.65"></p>
+  </div>
+
+  <div style="border-top:1px solid #e2e8f0;padding-top:14px;text-align:center">
+    <p id="pv-validity" style="color:#64748b;font-size:.78rem;margin:0"></p>
+    <p id="pv-credit" style="color:#c4cdd8;font-size:.68rem;margin:5px 0 0;font-style:italic"></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MAIN APP — Header fijo: "Calculadora Lumia" + ícono Lucide
+══════════════════════════════════════════════ -->
+<div class="no-print">
+
+  <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-screen-xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Lucide Printer icon (SVG inline) — estático, nunca cambia -->
+        <div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            aria-hidden="true">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+        </div>
+        <div class="leading-tight">
+          <div class="font-bold text-base text-blue-600 dark:text-blue-400">Calculadora Lumia</div>
+          <div class="text-xs text-gray-400" data-i18n="tagline">Costeo Profesional · Impresión 3D</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- 💳 SELECTOR DE MONEDA -->
+        <select id="cursel" onchange="changeCurrency()"
+          class="text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer font-medium">
+          <option value="ARS">🇦🇷 ARS $</option>
+          <option value="USD">🇺🇸 USD $</option>
+          <option value="EUR">🇪🇺 EUR €</option>
+          <option value="MXN">🇲🇽 MXN $</option>
+          <option value="CLP">🇨🇱 CLP $</option>
+        </select>
+        <button id="lbtn" onclick="toggleLang()" class="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors">🌐 ES</button>
+        <button onclick="toggleDark()" class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center transition-colors">
+          <span id="di">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-screen-xl mx-auto px-4 py-5 grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+    <!-- ═══ COLUMNA IZQUIERDA ═══ -->
+    <div class="xl:col-span-2 space-y-4">
+
+      <!-- 📋 PROYECTO -->
+      <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+        <h2 class="text-base font-semibold mb-4 flex items-center gap-2">📋 <span data-i18n="sec_project">Datos del Proyecto</span></h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="label" data-i18n="lbl_pname">Nombre del Proyecto</label><input type="text" id="pname" placeholder="Ej: Figura Dragon Ball" class="inp"></div>
+          <div><label class="label" data-i18n="lbl_client">Cliente</label><input type="text" id="pcli" placeholder="Ej: Juan García" class="inp"></div>
+          <div class="sm:col-span-2"><label class="label" data-i18n="lbl_notes">Notas para el presupuesto</label><textarea id="pnotes" rows="2" placeholder="Incluye soporte, pintura base, etc." class="inp resize-none"></textarea></div>
+        </div>
+      </div>
+
+      <!-- ⏱️ TIEMPO DE IMPRESIÓN -->
+      <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+        <h2 class="text-base font-semibold mb-1 flex items-center gap-2">⏱️ <span data-i18n="sec_ptime">Tiempo de Impresión</span></h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4" data-i18n="desc_ptime_card">Tiempo que la máquina trabaja. Afecta: electricidad y amortización.</p>
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">🕐 <span data-i18n="lbl_h">Horas</span></label>
+              <input type="number" id="pth" min="0" max="999" value="0" class="inp" oninput="syn('pth','spth');cl()">
+              <input type="range" id="spth" min="0" max="200" value="0" class="mt-1.5" oninput="syn('spth','pth');cl()">
+            </div>
+            <div>
+              <label class="label">⏰ <span data-i18n="lbl_m">Minutos</span></label>
+              <input type="number" id="ptm" min="0" max="59" value="0" class="inp" oninput="syn('ptm','sptm');cl()">
+              <input type="range" id="sptm" min="0" max="59" value="0" class="mt-1.5" oninput="syn('sptm','ptm');cl()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔧 MANTENIMIENTO Y AMORTIZACIÓN -->
+      <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+        <h2 class="text-base font-semibold mb-1 flex items-center flex-wrap gap-1">
+          🔧 <span data-i18n="sec_mach">Mantenimiento y Amortización de Máquina</span>
+          <span class="tt-wrap" onclick="ttTap(this)">
+            <button class="tt-icon" aria-label="Ayuda amortización" tabindex="0">i</button>
+            <span class="tt-box" id="tt-mach" role="tooltip"></span>
+          </span>
+        </h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4" data-i18n="desc_mach">Costo de "alquiler" de la impresora por hora de uso.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="label">💰 <span data-i18n="lbl_mprice">Precio de compra ({c})</span></label>
+            <input type="number" id="mprice" min="0" value="0" class="inp" oninput="syn('mprice','smprice');saveSettings();cl()">
+            <input type="range" id="smprice" min="0" max="5000" step="10" value="0" class="mt-1.5" oninput="syn('smprice','mprice');saveSettings();cl()">
+          </div>
+          <div>
+            <label class="label">⏳ <span data-i18n="lbl_mlife">Vida útil (horas)</span></label>
+            <input type="number" id="mlife" min="1" value="2000" class="inp" oninput="syn('mlife','smlife');saveSettings();cl()">
+            <input type="range" id="smlife" min="100" max="10000" step="100" value="2000" class="mt-1.5" oninput="syn('smlife','mlife');saveSettings();cl()">
+          </div>
+          <div>
+            <label class="label">🔩 <span data-i18n="lbl_mmaint">Mantenimiento anual ({c})</span></label>
+            <input type="number" id="mmaint" min="0" value="0" class="inp" oninput="syn('mmaint','smmaint');saveSettings();cl()">
+            <input type="range" id="smmaint" min="0" max="2000" step="10" value="0" class="mt-1.5" oninput="syn('smmaint','mmaint');saveSettings();cl()">
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-2 bg-gray-50 dark:bg-gray-700/60 rounded-lg px-3 py-2 text-sm">
+          <span class="text-gray-500 dark:text-gray-400" data-i18n="info_mach">Costo de máquina por hora:</span>
+          <span id="mach-ph" class="font-bold text-blue-600 dark:text-blue-400">$0.00</span>
+        </div>
+      </div>
+
+      <!-- 🧵 FILAMENTO E INSUMOS -->
+      <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold flex items-center gap-2">🧵 <span data-i18n="sec_fil">Filamento e Insumos</span></h2>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-500" data-i18n="lbl_prof">Perfil:</label>
+            <select id="prof" onchange="loadProf()" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="pla">🟢 PLA</option>
+              <option value="petg">🔵 PETG</option>
+              <option value="abs">🔴 ABS</option>
+              <option value="asa">🟣 ASA</option>
+              <option value="tpu">🟠 TPU</option>
+              <option value="resin">🪄 Resina</option>
+              <option value="custom">⚙️ Custom</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="label">💵 <span data-i18n="lbl_sprice">Precio bobina ({c})</span></label>
+            <input type="number" id="sprice" min="0" value="20" class="inp" oninput="syn('sprice','ssprice');saveSettings();cl()">
+            <input type="range" id="ssprice" min="0" max="300" step="1" value="20" class="mt-1.5" oninput="syn('ssprice','sprice');saveSettings();cl()">
+          </div>
+          <div>
+            <label class="label">⚖️ <span data-i18n="lbl_sw">Peso bobina (gr)</span></label>
+            <input type="number" id="sw" min="1" value="1000" class="inp" oninput="syn('sw','ssw');saveSettings();cl()">
+            <input type="range" id="ssw" min="100" max="5000" step="50" value="1000" class="mt-1.5" oninput="syn('ssw','sw');saveSettings();cl()">
+          </div>
+          <div>
+            <label class="label">🖨️ <span data-i18n="lbl_fu">Filamento usado (gr)</span></label>
+            <input type="number" id="fu" min="0" value="0" class="inp" oninput="syn('fu','sfu');cl()">
+            <input type="range" id="sfu" min="0" max="1000" step="1" value="0" class="mt-1.5" oninput="syn('sfu','fu');cl()">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="label flex items-center">
+              ⚠️ <span data-i18n="lbl_fail" class="ml-1">Riesgo de fallo (%)</span>
+              <span class="tt-wrap" onclick="ttTap(this)">
+                <button class="tt-icon" aria-label="Ayuda riesgo" tabindex="0">i</button>
+                <span class="tt-box" id="tt-fail" role="tooltip"></span>
+              </span>
+            </label>
+            <input type="number" id="fail" min="0" max="100" value="0" class="inp" oninput="syn('fail','sfail');cl()">
+            <input type="range" id="sfail" min="0" max="100" step="1" value="0" class="mt-1.5" oninput="syn('sfail','fail');cl()">
+          </div>
+          <div>
+            <label class="label">🪣 <span data-i18n="lbl_post">Post-proceso / Insumos ({c})</span></label>
+            <input type="number" id="post" min="0" value="0" class="inp" oninput="syn('post','spost');cl()">
+            <input type="range" id="spost" min="0" max="200" step="0.5" value="0" class="mt-1.5" oninput="syn('spost','post');cl()">
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-2 bg-gray-50 dark:bg-gray-700/60 rounded-lg px-3 py-2 text-sm">
+          <span class="text-gray-500 dark:text-gray-400" data-i18n="info_ppg">Precio por gramo:</span>
+          <span id="ppg" class="font-bold text-green-600 dark:text-green-400">$0.00</span>
+        </div>
+      </div>
+
+      <!-- ⚡ ELECTRICIDAD -->
+      <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+        <h2 class="text-base font-semibold mb-1 flex items-center gap-2">⚡ <span data-i18n="sec_elec">Electricidad</span></h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4" data-i18n="desc_elec">Calculado sobre el tiempo de impresión de la máquina.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="label">🔌 <span data-i18n="lbl_watts">Consumo impresora (W)</span></label>
+            <input type="number" id="watts" min="0" value="150" class="inp" oninput="syn('watts','swatts');saveSettings();cl()">
+            <input type="range" id="swatts" min="0" max="600" step="5" value="150" class="mt-1.5" oninput="syn('swatts','watts');saveSettings();cl()">
+          </div>
+          <div>
+            <label class="label">💡 <span data-i18n="lbl_kwh">Precio kWh ({c})</span></label>
+            <input type="number" id="kwh" min="0" step="0.001" value="0.10" class="inp" oninput="syn('kwh','skwh');saveSettings();cl()">
+            <input type="range" id="skwh" min="0" max="2" step="0.01" value="0.10" class="mt-1.5" oninput="syn('skwh','kwh');saveSettings();cl()">
+          </div>
+        </div>
+      </div>
+
+      <!-- 👷 MANO DE OBRA -->
+      <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+        <h2 class="text-base font-semibold mb-1 flex items-center gap-1 flex-wrap">
+          👷 <span data-i18n="sec_lab" class="ml-1">Mano de Obra</span>
+          <span class="tt-wrap" onclick="ttTap(this)">
+            <button class="tt-icon" aria-label="Ayuda mano de obra" tabindex="0">i</button>
+            <span class="tt-box" id="tt-lab" role="tooltip"></span>
+          </span>
+        </h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4" data-i18n="desc_lab">100% independiente del tiempo de impresión de la máquina.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4">
+            <h3 class="font-medium text-orange-700 dark:text-orange-300 text-sm mb-1">🛠️ <span data-i18n="lbl_ltime">Tiempo de Mano de Obra</span></h3>
+            <p class="text-xs text-orange-500 dark:text-orange-400 mb-3" data-i18n="desc_ltime">Prep + config + post-proceso + empaque</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="label">🕐 <span data-i18n="lbl_h">Horas</span></label>
+                <input type="number" id="lth" min="0" max="999" value="0" class="inp" oninput="syn('lth','slth');cl()">
+                <input type="range" id="slth" min="0" max="200" value="0" class="mt-1.5" oninput="syn('slth','lth');cl()">
+              </div>
+              <div>
+                <label class="label">⏰ <span data-i18n="lbl_m">Minutos</span></label>
+                <input type="number" id="ltm" min="0" max="59" value="0" class="inp" oninput="syn('ltm','sltm');cl()">
+                <input type="range" id="sltm" min="0" max="59" value="0" class="mt-1.5" oninput="syn('sltm','ltm');cl()">
+              </div>
+            </div>
+          </div>
+          <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 flex flex-col justify-between">
+            <div>
+              <h3 class="font-medium text-orange-700 dark:text-orange-300 text-sm mb-3">💵 <span data-i18n="lbl_hr">Valor Hora Hombre ({c})</span></h3>
+              <input type="number" id="hr" min="0" value="15" class="inp" oninput="syn('hr','shr');saveSettings();cl()">
+              <input type="range" id="shr" min="0" max="500" step="1" value="15" class="mt-1.5" oninput="syn('shr','hr');saveSettings();cl()">
+            </div>
+            <div class="mt-3 bg-white dark:bg-orange-900/30 rounded-lg px-3 py-2 border border-orange-200 dark:border-orange-700">
+              <span class="text-orange-600 dark:text-orange-400 text-xs block" data-i18n="info_labor">Costo calculado:</span>
+              <span id="labor-calc" class="font-bold text-orange-700 dark:text-orange-200 text-lg">$0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col izquierda -->
+
+    <!-- ═══ COLUMNA DERECHA — RESULTADOS ═══ -->
+    <div class="xl:col-span-1">
+      <div class="sticky top-16 space-y-4">
+
+        <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+          <h2 class="text-base font-semibold mb-4 flex items-center gap-2">📊 <span data-i18n="sec_res">Desglose de Costos</span></h2>
+          <div class="space-y-0.5 text-sm mb-3">
+            <div class="brow"><span class="text-gray-500 dark:text-gray-400">🧵 <span data-i18n="c_fil">Filamento</span></span><span id="cf" class="font-medium">$0.00</span></div>
+            <div class="brow"><span class="text-gray-500 dark:text-gray-400">⚡ <span data-i18n="c_elec">Electricidad</span></span><span id="ce" class="font-medium">$0.00</span></div>
+            <div class="brow"><span class="text-gray-500 dark:text-gray-400">🔧 <span data-i18n="c_mach">Amortización</span></span><span id="cm" class="font-medium">$0.00</span></div>
+            <div class="brow"><span class="text-gray-500 dark:text-gray-400">👷 <span data-i18n="c_lab">Mano de obra</span></span><span id="cl2" class="font-medium">$0.00</span></div>
+            <div class="brow"><span class="text-gray-500 dark:text-gray-400">⚠️ <span data-i18n="c_fail">Riesgo fallo</span></span><span id="cfail" class="font-medium">$0.00</span></div>
+            <div class="brow"><span class="text-gray-500 dark:text-gray-400">🪣 <span data-i18n="c_post">Post-proceso</span></span><span id="cpost" class="font-medium">$0.00</span></div>
+          </div>
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 flex justify-between items-center mb-1">
+            <span class="font-semibold text-sm" data-i18n="total">Costo de Producción</span>
+            <span id="tot" class="font-bold text-xl">$0</span>
+          </div>
+          <p class="text-xs text-gray-400 dark:text-gray-500 text-right mb-4" data-i18n="total_sub">Redondeado al entero más cercano</p>
+
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2" data-i18n="lbl_mult">Precio de Venta</p>
+          <div class="space-y-2 mb-4">
+            <button onclick="selMult('wholesale',3,this)" id="bw" class="mbtn w-full flex justify-between items-center p-3 rounded-xl border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40">
+              <span class="font-medium text-sm text-blue-700 dark:text-blue-300">📦 <span data-i18n="m_wh">Mayorista × 3</span></span>
+              <span id="pw" class="font-bold text-blue-700 dark:text-blue-300 text-sm">$0</span>
+            </button>
+            <button onclick="selMult('retail',4,this)" id="br" class="mbtn w-full flex justify-between items-center p-3 rounded-xl border bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/40">
+              <span class="font-medium text-sm text-purple-700 dark:text-purple-300">🛍️ <span data-i18n="m_rt">Minorista × 4</span></span>
+              <span id="pr" class="font-bold text-purple-700 dark:text-purple-300 text-sm">$0</span>
+            </button>
+            <button onclick="selMult('keychains',3,this)" id="bk" class="mbtn w-full flex justify-between items-center p-3 rounded-xl border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40">
+              <span class="font-medium text-sm text-green-700 dark:text-green-300">🔑 <span data-i18n="m_kc">Llaveros × 3</span></span>
+              <span id="pk" class="font-bold text-green-700 dark:text-green-300 text-sm">$0</span>
+            </button>
+          </div>
+
+          <div id="selcard" class="hidden bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-4 text-white text-center mb-4 shadow-lg">
+            <p id="sellbl" class="text-xs opacity-75 uppercase tracking-wider mb-1"></p>
+            <p id="selprice" class="text-4xl font-extrabold tracking-tight">$0</p>
+            <p class="text-xs opacity-60 mt-1" data-i18n="sel_sub">Precio final seleccionado</p>
+          </div>
+
+          <button onclick="genBudget()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all">
+            📄 <span data-i18n="btn_bud">Generar Presupuesto</span>
+          </button>
+          <button onclick="resetCalc()" class="mt-2 w-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 py-2 rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+            🔄 <span data-i18n="btn_rst">Resetear Cálculo</span>
+          </button>
+        </div>
+
+        <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+          <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">📈 <span data-i18n="sec_mrg">Análisis de Margen</span></h3>
+          <div class="space-y-2 text-xs text-gray-600 dark:text-gray-400">
+            <div class="flex justify-between"><span data-i18n="mrg_x3">Ganancia neta × 3</span><span id="gx3" class="font-semibold text-green-600 dark:text-green-400">$0</span></div>
+            <div class="flex justify-between"><span data-i18n="mrg_x4">Ganancia neta × 4</span><span id="gx4" class="font-semibold text-green-600 dark:text-green-400">$0</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- EMPRESA -->
+  <section class="max-w-screen-xl mx-auto px-4 pb-4">
+    <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+      <h2 class="text-base font-semibold mb-4 flex items-center gap-2">
+        🏢 <span data-i18n="sec_co">Configuración de Empresa</span>
+        <span class="text-xs font-normal text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full" data-i18n="badge_save">Se guarda automáticamente</span>
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Placeholders genéricos — sin "Santi 3D" ni datos reales -->
+        <div><label class="label">🏷️ <span data-i18n="lbl_coname">Nombre de empresa</span></label><input type="text" id="coname" placeholder="Nombre de tu Taller" class="inp" oninput="saveCo()"></div>
+        <div><label class="label">📞 <span data-i18n="lbl_cophone">Teléfono</span></label><input type="text" id="cophone" placeholder="+00 12345678" class="inp" oninput="saveCo()"></div>
+        <div><label class="label">✉️ <span data-i18n="lbl_coemail">Email</span></label><input type="email" id="coemail" placeholder="tu@email.com" class="inp" oninput="saveCo()"></div>
+        <div><label class="label">📍 <span data-i18n="lbl_coaddr">Dirección / Ciudad</span></label><input type="text" id="coaddr" placeholder="Ciudad, País" class="inp" oninput="saveCo()"></div>
+      </div>
+      <!-- ⏳ VALIDEZ DEL PRESUPUESTO -->
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-end gap-4">
+        <div>
+          <label class="label">⏳ <span data-i18n="lbl_validity">Validez del Presupuesto</span></label>
+          <select id="validity-sel" onchange="changeValidity()"
+            class="inp" style="width:auto;min-width:155px">
+            <option value="3"  data-i18n-v="val_3">3 días</option>
+            <option value="7"  data-i18n-v="val_7">7 días</option>
+            <option value="15" selected data-i18n-v="val_15">15 días</option>
+            <option value="30" data-i18n-v="val_30">30 días</option>
+            <option value="custom" data-i18n-v="val_custom">Personalizado</option>
+          </select>
+        </div>
+        <div id="validity-custom-wrap" class="hidden">
+          <label class="label" data-i18n="lbl_validity_days">Días personalizados</label>
+          <input type="number" id="validity-custom" min="1" max="365" value="15"
+            class="inp" style="width:110px" oninput="saveSettings()">
+        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500 self-end pb-1" data-i18n="desc_validity">Aparece en el presupuesto generado</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="max-w-screen-xl mx-auto px-4 pb-6">
+    <div class="card bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div class="flex flex-col sm:flex-row items-center gap-5">
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div id="lprev" class="w-20 h-20 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden text-3xl">🏢</div>
+          <div>
+            <p class="text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">🖼️ <span data-i18n="lbl_logo">Logo de Empresa</span></p>
+            <p class="text-xs text-gray-400 mb-2" data-i18n="desc_logo">Aparece en el presupuesto impreso</p>
+            <label class="cursor-pointer inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors">
+              📁 <span data-i18n="lbl_choose">Elegir archivo</span>
+              <input type="file" id="logoinput" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange="uploadLogo(event)" class="hidden">
+            </label>
+            <button onclick="removeLogo()" class="ml-2 text-xs text-red-400 hover:text-red-600 transition-colors" data-i18n="lbl_rmlogo">Eliminar</button>
+          </div>
+        </div>
+        <div class="flex-1 text-center">
+          <p class="text-sm text-gray-400"><span data-i18n="footer_tl">Hecho con ❤️ para la comunidad de impresión 3D</span></p>
+          <p class="text-xs text-gray-300 dark:text-gray-600 mt-0.5">Calculadora Lumia v1.6 · 100% local</p>
+        </div>
+        <button onclick="genBudget()" class="flex-shrink-0 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+          📄 <span data-i18n="btn_exp">Exportar Presupuesto</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT ENGINE v1.5
+══════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+let lang = 'es', currency = 'ARS', sm = null, smv = 1, bc = 1;
+let _saveTimer = null; // timer para debounce del toast
+
+const PR = {
+  pla:{p:20,w:1000}, petg:{p:26,w:1000}, abs:{p:22,w:1000},
+  asa:{p:28,w:1000}, tpu:{p:35,w:800}, resin:{p:45,w:500}, custom:{p:20,w:1000}
+};
+
+// ── Tooltips (ES / EN) ───────────────────────────
+const TT = {
+  es:{
+    mach:`<b>Guía de valores recomendados:</b><br><br>
+• <b>Vida Útil:</b> Se recomienda configurar entre <b>5.000 y 8.000 horas</b> (equivalente a 1,5–2 años de uso intensivo).<br><br>
+• <b>Mantenimiento Anual:</b> Ingresa entre un <b>10% y 15%</b> del valor de compra para cubrir repuestos (boquillas, correas, etc.).<br>
+<div class="tt-tip">🎯 <b>Objetivo:</b> La calculadora dividirá estos costos por tus horas de uso para que la máquina se pague sola con cada trabajo.</div>`,
+    fail:`<b>¿Para qué sirve?</b><br>
+Cubre el costo invisible de los errores. Suma un % extra al costo total para cubrir el filamento y la luz de piezas que salen mal, se despegan o fallan por cortes de energía.<br><br>
+<b>• 5%:</b> Máquinas muy confiables (Prusa / Bambu).<br>
+<b>• 10%–15%:</b> Piezas complejas o materiales difíciles (ABS / Nylon).`,
+    lab:`<b>¿Qué representa?</b><br>
+Tu sueldo por el trabajo activo. Incluye el tiempo de laminado (slicer), preparación de la cama, cambio de filamento y limpieza de la pieza final.<br><br>
+<div class="tt-tip">⚠️ IMPORTANTE: No es el tiempo que la máquina imprime sola. Es el tiempo que vos le dedicás físicamente al pedido.</div>`
+  },
+  en:{
+    mach:`<b>Recommended value guide:</b><br><br>
+• <b>Useful Life:</b> Recommended between <b>5,000 and 8,000 hours</b> (equivalent to 1.5–2 years of intensive use).<br><br>
+• <b>Annual Maintenance:</b> Enter between <b>10% and 15%</b> of the purchase price to cover spare parts (nozzles, belts, etc.).<br>
+<div class="tt-tip">🎯 <b>Goal:</b> The calculator will divide these costs by your usage hours so the machine pays for itself with each job.</div>`,
+    fail:`<b>What is this for?</b><br>
+Covers the invisible cost of errors. Adds an extra % to the total to cover filament and electricity from failed prints, detached parts or power outages.<br><br>
+<b>• 5%:</b> Very reliable machines (Prusa / Bambu).<br>
+<b>• 10%–15%:</b> Complex prints or difficult materials (ABS / Nylon).`,
+    lab:`<b>What does this represent?</b><br>
+Your wage for active work. Includes slicing time, bed preparation, filament changes and final part cleaning.<br><br>
+<div class="tt-tip">⚠️ IMPORTANT: This is NOT the time the printer runs unattended. It's the time you physically dedicate to the order.</div>`
+  }
+};
+
+// ── Traducciones UI (usa {c} para símbolo de moneda) ─
+const TR = {
+  es:{
+    tagline:'Costeo Profesional · Impresión 3D',
+    sec_project:'Datos del Proyecto', lbl_pname:'Nombre del Proyecto', lbl_client:'Cliente', lbl_notes:'Notas para el presupuesto',
+    sec_ptime:'Tiempo de Impresión', desc_ptime_card:'Tiempo que la máquina trabaja. Afecta: electricidad y amortización.',
+    lbl_h:'Horas', lbl_m:'Minutos',
+    sec_mach:'Mantenimiento y Amortización de Máquina', desc_mach:'Costo de "alquiler" de la impresora por hora de uso.',
+    lbl_mprice:'Precio de compra ({c})', lbl_mlife:'Vida útil (horas)', lbl_mmaint:'Mantenimiento anual ({c})', info_mach:'Costo de máquina por hora:',
+    sec_fil:'Filamento e Insumos', lbl_prof:'Perfil:',
+    lbl_sprice:'Precio bobina ({c})', lbl_sw:'Peso bobina (gr)', lbl_fu:'Filamento usado (gr)',
+    lbl_fail:'Riesgo de fallo (%)', lbl_post:'Post-proceso / Insumos ({c})', info_ppg:'Precio por gramo:',
+    sec_elec:'Electricidad', desc_elec:'Calculado sobre el tiempo de impresión de la máquina.',
+    lbl_watts:'Consumo impresora (W)', lbl_kwh:'Precio kWh ({c})',
+    sec_lab:'Mano de Obra', desc_lab:'100% independiente del tiempo de impresión de la máquina.',
+    lbl_ltime:'Tiempo de Mano de Obra', desc_ltime:'Prep + config + post-proceso + empaque',
+    lbl_hr:'Valor Hora Hombre ({c})', info_labor:'Costo calculado:',
+    sec_res:'Desglose de Costos',
+    c_fil:'Filamento', c_elec:'Electricidad', c_mach:'Amortización', c_lab:'Mano de obra', c_fail:'Riesgo fallo', c_post:'Post-proceso',
+    total:'Costo de Producción', total_sub:'Redondeado al entero más cercano',
+    lbl_mult:'Precio de Venta', m_wh:'Mayorista × 3', m_rt:'Minorista × 4', m_kc:'Llaveros × 3',
+    sel_sub:'Precio final seleccionado', btn_bud:'Generar Presupuesto', btn_rst:'Resetear Cálculo',
+    sec_mrg:'Análisis de Margen', mrg_x3:'Ganancia neta × 3', mrg_x4:'Ganancia neta × 4',
+    sec_co:'Configuración de Empresa', badge_save:'Se guarda automáticamente',
+    lbl_coname:'Nombre de empresa', lbl_cophone:'Teléfono', lbl_coemail:'Email', lbl_coaddr:'Dirección / Ciudad',
+    lbl_logo:'Logo de Empresa', desc_logo:'Aparece en el presupuesto impreso',
+    lbl_choose:'Elegir archivo', lbl_rmlogo:'Eliminar',
+    footer_tl:'Hecho con ❤️ para la comunidad de impresión 3D', btn_exp:'Exportar Presupuesto',
+    pvl_proj:'PROYECTO', pvl_cli:'CLIENTE', pvl_date:'FECHA', pvl_num:'PRESUPUESTO N°',
+    pv_service:'Servicio de Impresión 3D', pv_total_sub:'Precio total del servicio',
+    pv_notes_lbl:'NOTAS',
+    pv_validity_tpl:'Presupuesto válido por {n} a partir de la fecha de emisión.',
+    pv_credit:'Generado con Calculadora Lumia',
+    toast_saved:'Guardado',
+    lbl_validity:'Validez del Presupuesto', desc_validity:'Aparece en el presupuesto generado',
+    lbl_validity_days:'Días personalizados',
+    val_3:'3 días', val_7:'7 días', val_15:'15 días', val_30:'30 días', val_custom:'Personalizado',
+  },
+  en:{
+    tagline:'Professional Costing · 3D Printing',
+    sec_project:'Project Data', lbl_pname:'Project Name', lbl_client:'Client', lbl_notes:'Budget notes',
+    sec_ptime:'Print Time', desc_ptime_card:'Time the machine is printing. Affects: electricity and amortization.',
+    lbl_h:'Hours', lbl_m:'Minutes',
+    sec_mach:'Machine Maintenance & Amortization', desc_mach:'Printer rental cost per hour of use.',
+    lbl_mprice:'Purchase price ({c})', lbl_mlife:'Useful life (hours)', lbl_mmaint:'Annual maintenance ({c})', info_mach:'Machine cost per hour:',
+    sec_fil:'Filament & Supplies', lbl_prof:'Profile:',
+    lbl_sprice:'Spool price ({c})', lbl_sw:'Spool weight (gr)', lbl_fu:'Filament used (gr)',
+    lbl_fail:'Failure risk (%)', lbl_post:'Post-process / Supplies ({c})', info_ppg:'Price per gram:',
+    sec_elec:'Electricity', desc_elec:'Calculated over machine print time.',
+    lbl_watts:'Printer consumption (W)', lbl_kwh:'kWh price ({c})',
+    sec_lab:'Labor', desc_lab:'100% independent from machine print time.',
+    lbl_ltime:'Labor Time', desc_ltime:'Prep + setup + post-process + packaging',
+    lbl_hr:'Hourly Labor Rate ({c})', info_labor:'Calculated cost:',
+    sec_res:'Cost Breakdown',
+    c_fil:'Filament', c_elec:'Electricity', c_mach:'Amortization', c_lab:'Labor', c_fail:'Failure risk', c_post:'Post-process',
+    total:'Production Cost', total_sub:'Rounded to nearest integer',
+    lbl_mult:'Sale Price', m_wh:'Wholesale × 3', m_rt:'Retail × 4', m_kc:'Keychains × 3',
+    sel_sub:'Selected final price', btn_bud:'Generate Quote', btn_rst:'Reset Calculation',
+    sec_mrg:'Margin Analysis', mrg_x3:'Net profit × 3', mrg_x4:'Net profit × 4',
+    sec_co:'Company Settings', badge_save:'Auto-saved',
+    lbl_coname:'Company name', lbl_cophone:'Phone', lbl_coemail:'Email', lbl_coaddr:'Address / City',
+    lbl_logo:'Company Logo', desc_logo:'Shown on printed quotes',
+    lbl_choose:'Choose file', lbl_rmlogo:'Remove',
+    footer_tl:'Made with ❤️ for the 3D printing community', btn_exp:'Export Quote',
+    pvl_proj:'PROJECT', pvl_cli:'CLIENT', pvl_date:'DATE', pvl_num:'QUOTE N°',
+    pv_service:'3D Printing Service', pv_total_sub:'Total service price',
+    pv_notes_lbl:'NOTES',
+    pv_validity_tpl:'Quote valid for {n} from the date of issue.',
+    pv_credit:'Generated with Lumia Calculator',
+    toast_saved:'Saved',
+    lbl_validity:'Quote Validity', desc_validity:'Shown on generated quotes',
+    lbl_validity_days:'Custom days',
+    val_3:'3 days', val_7:'7 days', val_15:'15 days', val_30:'30 days', val_custom:'Custom',
+  }
+};
+
+// ── Helpers ───────────────────────────────────────
+function g(id){ return document.getElementById(id) }
+function v(id){ return parseFloat(g(id).value) || 0 }
+function syn(a,b){ const el=g(b); if(el) el.value=g(a).value }
+
+// ── TOAST AUTOSAVE ────────────────────────────────
+// Aparece ~1.5 s cada vez que se guarda algo; no acumula
+function showSaveToast(){
+  const toast = g('save-toast');
+  g('toast-msg').textContent = TR[lang].toast_saved;
+  toast.classList.add('show');
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+// ── MONEDA: símbolo y formato ─────────────────────
+function getCurrSymbol(){
+  return currency === 'EUR' ? '€' : '$';
+}
+
+// ARS / CLP → entero, punto como miles   → $25.000
+// USD / EUR / MXN → 2 decimales, coma miles → $25.00 / $1,234.56
+function fmtR(n){
+  if(!isFinite(n)) return getCurrSymbol()+'0';
+  const sym = getCurrSymbol();
+  if(currency === 'ARS' || currency === 'CLP'){
+    const r = Math.round(n);
+    return sym + r.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  } else {
+    const abs = Math.abs(n).toFixed(2);
+    const parts = abs.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return sym + (n < 0 ? '-' : '') + parts[0] + '.' + parts[1];
+  }
+}
+
+// Desglose siempre con 2 decimales + símbolo correcto
+function fmt(n){ return getCurrSymbol() + n.toFixed(2) }
+
+// Parsear texto formateado → número flotante
+function parseDisp(str){
+  let clean = str.replace(/[$€]/g,'').trim();
+  if(currency === 'ARS' || currency === 'CLP'){
+    clean = clean.replace(/\./g,'');     // puntos = miles
+  } else {
+    clean = clean.replace(/,/g,'');      // comas  = miles
+  }
+  return parseFloat(clean) || 0;
+}
+
+// ── CÁLCULO PRINCIPAL ─────────────────────────────
+function cl(){
+  const pth = v('pth') + v('ptm')/60;
+  const lth = v('lth') + v('ltm')/60;
+  const ml  = Math.max(v('mlife'), 0.001);
+  const mph = v('mprice')/ml + v('mmaint')/2000;
+  g('mach-ph').textContent = fmt(mph);
+
+  const ppgv = v('sprice') / Math.max(v('sw'), 0.001);
+  g('ppg').textContent = fmt(ppgv);
+
+  const cFil  = ppgv * v('fu');
+  const cElec = (v('watts')/1000) * pth * v('kwh');
+  const cMach = mph * pth;
+  const cLab  = lth * v('hr');
+  const cPost = v('post');
+  const sub   = cFil + cElec + cMach + cLab + cPost;
+  const cFail = sub * v('fail') / 100;
+  const tot   = sub + cFail;
+
+  g('cf').textContent    = fmt(cFil);
+  g('ce').textContent    = fmt(cElec);
+  g('cm').textContent    = fmt(cMach);
+  g('cl2').textContent   = fmt(cLab);
+  g('cfail').textContent = fmt(cFail);
+  g('cpost').textContent = fmt(cPost);
+  g('labor-calc').textContent = fmt(cLab);
+
+  g('tot').textContent = fmtR(tot);
+  g('pw').textContent  = fmtR(tot * 3);
+  g('pr').textContent  = fmtR(tot * 4);
+  g('pk').textContent  = fmtR(tot * 3);
+  g('gx3').textContent = fmtR(tot * 2);
+  g('gx4').textContent = fmtR(tot * 3);
+  if(sm) g('selprice').textContent = fmtR(tot * smv);
+}
+
+// ── CAMBIO DE MONEDA ──────────────────────────────
+function changeCurrency(){
+  currency = g('cursel').value;
+  saveSettings();   // guarda (y muestra toast)
+  cl();
+  applyTr();        // actualiza etiquetas con {c}
+}
+
+// ── VALIDEZ DEL PRESUPUESTO ───────────────────────
+function changeValidity(){
+  const sel = g('validity-sel').value;
+  const wrap = g('validity-custom-wrap');
+  if(sel === 'custom') wrap.classList.remove('hidden');
+  else                 wrap.classList.add('hidden');
+  saveSettings();
+}
+
+// Construye el texto de validez para el PDF
+function getValidityText(){
+  const t   = TR[lang];
+  const sel = g('validity-sel').value;
+  let days;
+  if(sel === 'custom'){
+    const cv = (g('validity-custom').value || '15').trim();
+    days = cv + ' ' + (lang==='es' ? 'días' : 'days');
+  } else {
+    days = TR[lang]['val_'+sel] || sel + (lang==='es' ? ' días' : ' days');
+  }
+  return t.pv_validity_tpl.replace('{n}', days);
+}
+
+// ── MULTIPLICADORES ───────────────────────────────
+function selMult(type, mult, btn){
+  sm = type; smv = mult;
+  ['bw','br','bk'].forEach(id =>
+    g(id).classList.remove('ring-2','ring-blue-500','ring-purple-500','ring-green-500'));
+  btn.classList.add('ring-2',
+    type==='wholesale'?'ring-blue-500':type==='retail'?'ring-purple-500':'ring-green-500');
+  const tot = parseDisp(g('tot').textContent);
+  g('selcard').classList.remove('hidden');
+  g('sellbl').textContent = TR[lang]['m_'+{wholesale:'wh',retail:'rt',keychains:'kc'}[type]];
+  g('selprice').textContent = fmtR(tot * mult);
+}
+
+// ── RESET ─────────────────────────────────────────
+function resetCalc(){
+  ['pth','ptm','lth','ltm','fu','fail','post'].forEach(id => {
+    g(id).value = 0;
+    const sl = g('s'+id); if(sl) sl.value = 0;
+  });
+  sm = null;
+  g('selcard').classList.add('hidden');
+  ['bw','br','bk'].forEach(id =>
+    g(id).classList.remove('ring-2','ring-blue-500','ring-purple-500','ring-green-500'));
+  cl();
+}
+
+// ── PERFIL FILAMENTO ──────────────────────────────
+function loadProf(){
+  const p = PR[g('prof').value]; if(!p) return;
+  g('sprice').value=p.p; g('ssprice').value=p.p;
+  g('sw').value=p.w;     g('ssw').value=p.w;
+  saveSettings(); cl();
+}
+
+// ── DARK MODE ─────────────────────────────────────
+function toggleDark(){
+  const d = document.documentElement.classList.toggle('dark');
+  g('di').textContent = d ? '☀️' : '🌙';
+  localStorage.setItem('ld', d);
+}
+
+// ── IDIOMA ────────────────────────────────────────
+function toggleLang(){
+  lang = lang==='es' ? 'en' : 'es';
+  g('lbtn').textContent = '🌐 '+lang.toUpperCase();
+  localStorage.setItem('ll', lang);
+  applyTr();
+}
+
+// applyTr: traducciones + símbolo de moneda + tooltips + opciones de validez
+function applyTr(){
+  const t   = TR[lang];
+  const sym = getCurrSymbol();
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if(t[k] !== undefined) el.textContent = t[k].replace(/\{c\}/g, sym);
+  });
+  // Traducir opciones del select de validez
+  document.querySelectorAll('#validity-sel option[data-i18n-v]').forEach(opt => {
+    const k = opt.getAttribute('data-i18n-v');
+    if(t[k]) opt.textContent = t[k];
+  });
+  const tt = TT[lang];
+  g('tt-mach').innerHTML = tt.mach;
+  g('tt-fail').innerHTML = tt.fail;
+  g('tt-lab').innerHTML  = tt.lab;
+}
+
+// ── TOOLTIPS: tap en móvil ────────────────────────
+function ttTap(wrap){
+  const isOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.tt-wrap.open').forEach(w => w.classList.remove('open'));
+  if(!isOpen) wrap.classList.add('open');
+}
+document.addEventListener('click', e => {
+  if(!e.target.closest('.tt-wrap'))
+    document.querySelectorAll('.tt-wrap.open').forEach(w => w.classList.remove('open'));
+});
+
+// ── EMPRESA ───────────────────────────────────────
+function saveCo(){
+  localStorage.setItem('lco', JSON.stringify({
+    n: g('coname').value, p: g('cophone').value,
+    e: g('coemail').value, a: g('coaddr').value
+  }));
+  showSaveToast();
+}
+function loadCo(){
+  const d = JSON.parse(localStorage.getItem('lco') || '{}');
+  if(d.n) g('coname').value = d.n;
+  if(d.p) g('cophone').value = d.p;
+  if(d.e) g('coemail').value = d.e;
+  if(d.a) g('coaddr').value  = d.a;
+}
+
+// ── CONFIGURACIÓN PERSISTENTE ─────────────────────
+// Guarda: luz, amortización, filamento, tarifa, moneda y validez
+function saveSettings(){
+  localStorage.setItem('lset', JSON.stringify({
+    watts:g('watts').value, kwh:g('kwh').value,
+    mprice:g('mprice').value, mlife:g('mlife').value, mmaint:g('mmaint').value,
+    sprice:g('sprice').value, sw:g('sw').value, prof:g('prof').value, hr:g('hr').value,
+    currency: currency,
+    validity: g('validity-sel').value,
+    validityCustom: g('validity-custom').value,
+  }));
+  showSaveToast();
+}
+function loadSettings(){
+  const s = JSON.parse(localStorage.getItem('lset') || '{}');
+  const set = (id, val) => {
+    if(val===undefined||val===null||val==='') return;
+    g(id).value = val;
+    const sl = g('s'+id); if(sl) sl.value = val;
+  };
+  set('watts',s.watts); set('kwh',s.kwh);
+  set('mprice',s.mprice); set('mlife',s.mlife); set('mmaint',s.mmaint);
+  set('sprice',s.sprice); set('sw',s.sw); set('hr',s.hr);
+  if(s.prof) g('prof').value = s.prof;
+  if(s.currency){ currency = s.currency; g('cursel').value = s.currency; }
+  if(s.validity){
+    g('validity-sel').value = s.validity;
+    if(s.validity === 'custom'){
+      g('validity-custom-wrap').classList.remove('hidden');
+      if(s.validityCustom) g('validity-custom').value = s.validityCustom;
+    }
+  }
+}
+
+// ── LOGO — guardado inmediato en localStorage ─────
+function uploadLogo(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    localStorage.setItem('llogo', ev.target.result);  // guardado inmediato
+    applyLogo(ev.target.result);
+    showSaveToast();
+  };
+  r.readAsDataURL(f);
+}
+function applyLogo(b64){
+  g('lprev').innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:contain" alt="Logo">`;
+  g('print-logo').innerHTML = `<img src="${b64}" style="max-height:72px;max-width:180px;object-fit:contain;display:block" alt="Logo">`;
+}
+function removeLogo(){
+  localStorage.removeItem('llogo');
+  g('lprev').innerHTML      = '🏢';
+  g('print-logo').innerHTML = '';
+}
+
+// ── GENERAR PRESUPUESTO ───────────────────────────
+// Crédito: "Generado con Calculadora Lumia" (ES) / "Generated with Lumia Calculator" (EN)
+// Cabecera: nombre + logo del usuario (vacío si no hay datos)
+function genBudget(){
+  const t  = TR[lang];
+  const co = JSON.parse(localStorage.getItem('lco') || '{}');
+
+  // Cabecera del presupuesto = empresa del usuario
+  g('pv-co').textContent = co.n || '';
+  g('pv-ct').textContent = [
+    co.p ? '📞 '+co.p : '',
+    co.e ? '✉️ '+co.e : '',
+    co.a ? '📍 '+co.a : '',
+  ].filter(Boolean).join('  ·  ');
+
+  g('pvl-proj').textContent  = t.pvl_proj;
+  g('pvl-cli').textContent   = t.pvl_cli;
+  g('pvl-date').textContent  = t.pvl_date;
+  g('pvl-num').textContent   = t.pvl_num;
+  g('pv-service').textContent   = t.pv_service;
+  g('pv-total-sub').textContent = t.pv_total_sub;
+  g('pv-notes-lbl').textContent = t.pv_notes_lbl;
+  g('pv-validity').textContent  = getValidityText();  // validez dinámica desde selector
+  // Crédito bilingüe según idioma activo
+  g('pv-credit').textContent    = t.pv_credit;
+
+  g('pv-proj').textContent = g('pname').value || '';
+  g('pv-cli').textContent  = g('pcli').value  || '';
+  g('pv-date').textContent = new Date().toLocaleDateString(
+    lang==='es' ? 'es-AR' : 'en-US',
+    {year:'numeric', month:'long', day:'numeric'}
+  );
+  g('pv-num').textContent = 'N° ' + String(bc++).padStart(4,'0');
+
+  // Logo del usuario en el presupuesto
+  const logo = localStorage.getItem('llogo');
+  if(logo) applyLogo(logo);
+
+  // Recalcular desde campos (máxima precisión)
+  const pth=v('pth')+v('ptm')/60, lth=v('lth')+v('ltm')/60;
+  const ml=Math.max(v('mlife'),0.001);
+  const mph=v('mprice')/ml+v('mmaint')/2000;
+  const ppgv=v('sprice')/Math.max(v('sw'),0.001);
+  const cFil=ppgv*v('fu'), cElec=(v('watts')/1000)*pth*v('kwh');
+  const cMach=mph*pth, cLab=lth*v('hr'), cPost=v('post');
+  const sub=cFil+cElec+cMach+cLab+cPost;
+  const totF=sub+sub*v('fail')/100;
+  const price = sm ? totF*smv : totF;
+
+  g('pv-price').textContent = fmtR(price);
+  g('pv-notes').textContent = g('pnotes').value ||
+    (lang==='es' ? 'Servicio de impresión 3D.' : '3D printing service.');
+
+  window.print();
+}
+
+// ── INIT ─────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Modo oscuro
+  if(localStorage.getItem('ld')==='true'){
+    document.documentElement.classList.add('dark');
+    g('di').textContent = '☀️';
+  }
+  // Idioma
+  const ll = localStorage.getItem('ll');
+  if(ll==='en'){ lang='en'; g('lbtn').textContent='🌐 EN'; }
+
+  // Config persistente (luz, máquina, filamento, tarifa, moneda)
+  loadSettings();
+  // Traducciones + símbolo de moneda + tooltips
+  applyTr();
+  // Datos empresa
+  loadCo();
+  // Logo
+  const logo = localStorage.getItem('llogo');
+  if(logo) applyLogo(logo);
+  // Cálculo inicial
+  cl();
+});
+</script>
+</body>
+</html>
